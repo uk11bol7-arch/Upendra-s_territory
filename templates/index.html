@@ -1,0 +1,341 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" x-data="clientDashboard()" x-init="init()" :class="theme==='dark' ? 'dark' : ''">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Client — Dashboard{% endblock title %}</title>
+  <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tailwind Configuration -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] },
+          colors: {
+            brand: {
+              50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+              400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+              800: '#3730a3', 900: '#312e81'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js" defer></script>
+
+  <style>
+    html, body { height: 100%; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: #87CEEB; border-radius: 9999px; }
+    .dark ::-webkit-scrollbar-thumb { background: #4682B4; }
+
+    /* Custom scrollbar for modal */
+    .scrollbar-thin {
+      scrollbar-width: thin;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #87CEEB;
+      border-radius: 3px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background: #4682B4;
+    }
+    .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #4682B4;
+    }
+    .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background: #1e40af;
+    }
+  </style>
+
+  <!-- Custom CSS -->
+  {% block extra_css %}{% endblock extra_css %}
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased">
+  <!-- Sidebar -->
+  <aside class="hidden lg:flex fixed left-0 top-0 bottom-0 w-72 flex-col border-r border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 backdrop-blur z-50">
+    <div class="h-16 flex items-center gap-3 px-5 border-b border-slate-200 dark:border-slate-800">
+      <div class="w-8 h-8 rounded bg-brand-600 text-white grid place-content-center font-bold">C</div>
+      <div>
+        <div class="text-sm font-semibold">Client Portal</div>
+        <div class="text-xs text-slate-500">Environment: <span class="font-medium" x-text="env"></span></div>
+      </div>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3">
+      <ul class="text-sm space-y-1 px-3">
+        <template x-for="item in sidebar" :key="item.label">
+          <li>
+            <a :href="item.href"
+               :class="active===item.label ? 'bg-brand-50 dark:bg-slate-800 text-brand-700 dark:text-white' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
+               class="flex items-center gap-3 px-3 py-2 rounded transition">
+              <i :data-lucide="item.icon" class="w-4 h-4"></i>
+              <span x-text="item.label"></span>
+            </a>
+          </li>
+        </template>
+      </ul>
+    </nav>
+    <div class="p-3 border-t border-slate-200 dark:border-slate-800">
+      <button @click="toggleTheme()" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+        <i data-lucide="moon" class="w-4 h-4" x-show="theme==='light'"></i>
+        <i data-lucide="sun" class="w-4 h-4" x-show="theme==='dark'"></i>
+        <span>Toggle Theme</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="lg:pl-72 flex flex-col min-w-0 h-screen">
+    <!-- Topbar -->
+    <header class="h-16 flex items-center gap-3 px-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 backdrop-blur sticky top-0 z-40">
+      <button class="lg:hidden inline-flex items-center justify-center p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800" @click="mobileSidebar=true"><i data-lucide="menu" class="w-5 h-5"></i></button>
+      <div class="hidden lg:flex items-center gap-2 text-slate-500">
+        <i data-lucide="home" class="w-4 h-4"></i>
+        <span class="text-xs">Home</span>
+        <span class="text-xs">›</span>
+        <span class="text-xs font-medium" x-text="active"></span>
+      </div>
+      <div class="flex-1 min-w-0 flex items-center justify-center">
+        <div class="w-full max-w-2xl relative">
+          <input x-model.debounce.300ms="filters.search" @keydown.slash.window.prevent="$el.focus()" @keydown.enter="performSearch()" @input="filters.search && filters.search.length > 2 ? performSearch() : null" type="text" placeholder="Search conversations (press /)" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded pl-9 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500" />
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="relative p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800" @click="openNotificationsModal()">
+          <i data-lucide="bell" class="w-5 h-5"></i>
+        </button>
+        <button class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="help-circle" class="w-5 h-5"></i></button>
+        <div class="relative" x-data="{open:false}" @keydown.escape.window="open=false">
+          <button @click="open=!open" class="inline-flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+            <img src="https://i.pravatar.cc/28" alt="avatar" class="w-7 h-7 rounded-full" />
+            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+          </button>
+          <div x-show="open" x-transition @click.outside="open=false" class="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-lg overflow-hidden z-50">
+            <button @click="open=false" class="w-full text-left flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="user" class="w-4 h-4"></i> Profile</button>
+            <button @click="open=false" class="w-full text-left flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800"><i data-lucide="settings" class="w-4 h-4"></i> Settings</button>
+            <button class="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"><i data-lucide="log-out" class="w-4 h-4"></i> Sign out</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Scroll container -->
+    <div class="flex-1 min-h-0 overflow-y-auto">
+      <!-- Main Content Area -->
+      <div class="p-6">
+        {% block content %}
+        
+        {% endblock content %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile sidebar drawer -->
+  <div class="fixed inset-0 z-50 lg:hidden" x-show="mobileSidebar" x-transition>
+    <div class="absolute inset-0 bg-black/40" @click="mobileSidebar=false"></div>
+    <aside class="absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-3 overflow-y-auto">
+      <div class="flex items-center justify-between h-12">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded bg-brand-600 text-white grid place-content-center font-bold">C</div>
+          <div class="text-sm font-semibold">Client Portal</div>
+        </div>
+        <button @click="mobileSidebar=false" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <nav class="py-3">
+        <ul class="text-sm space-y-1">
+          <template x-for="item in sidebar" :key="item.label">
+            <li>
+              <a :href="item.href"
+                 @click="mobileSidebar=false"
+                 :class="active===item.label ? 'bg-brand-50 dark:bg-slate-800 text-brand-700 dark:text-white' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                 class="flex items-center gap-3 px-3 py-2 rounded transition">
+                <i :data-lucide="item.icon" class="w-4 h-4"></i>
+                <span x-text="item.label"></span>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </nav>
+      <div class="p-2">
+        <button @click="toggleTheme(); mobileSidebar=false" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+          <i data-lucide="moon" class="w-4 h-4" x-show="theme==='light'"></i>
+          <i data-lucide="sun" class="w-4 h-4" x-show="theme==='dark'"></i>
+          <span>Toggle Theme</span>
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Custom JavaScript -->
+  <script>
+    function clientDashboard() {
+      return {
+        theme: 'light',
+        env: 'Development',
+        active: 'Dashboard',
+        mobileSidebar: false,
+
+        filters: {
+          search: ''
+        },
+
+        performSearch() {
+          if (this.filters.search.trim()) {
+            console.log(`Searching for: "${this.filters.search}"`);
+          }
+        },
+
+        openNotificationsModal() {
+          console.log('Opening notifications modal');
+        },
+
+        init() {
+          // Initialize theme from localStorage
+          const savedTheme = localStorage.getItem('theme');
+          if (savedTheme) {
+            this.theme = savedTheme;
+          }
+          if (this.theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+
+          // Set active page based on current URL
+          this.setActivePage();
+
+          // Initialize Lucide icons with proper timing
+          this.initIcons();
+        },
+
+        setActivePage() {
+          const currentPath = window.location.pathname;
+          if (currentPath.startsWith('/inbox')) {
+            this.active = 'Inbox';
+          } else if (currentPath === '/' || currentPath === '') {
+            this.active = 'Dashboard';
+          } else {
+            // Default to Dashboard for other pages
+            this.active = 'Dashboard';
+          }
+        },
+
+        initIcons() {
+          // Wait for Lucide to be loaded and DOM to be ready
+          if (typeof lucide !== 'undefined') {
+            // Small delay to ensure all elements are rendered
+            setTimeout(() => {
+              lucide.createIcons();
+            }, 100);
+          } else {
+            // If Lucide isn't loaded yet, wait for it
+            window.addEventListener('load', () => {
+              if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+              }
+            });
+          }
+        },
+
+        toggleTheme() {
+          this.theme = this.theme === 'light' ? 'dark' : 'light';
+          localStorage.setItem('theme', this.theme);
+          if (this.theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+          // Re-initialize icons after theme change
+          this.refreshIcons();
+        },
+
+        refreshIcons() {
+          // Re-create icons after DOM changes
+          if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+          }
+        },
+
+        sidebar: [
+          {label:'Dashboard', icon:'layout-dashboard', href: '/'},
+          {label:'Inbox', icon:'inbox', href: '/inbox/'},
+          {label:'Bot & Flows', icon:'bot', href: '#'},
+          {label:'Contacts', icon:'users', href: '#'},
+          {label:'Channels & Connections', icon:'network', href: '#'},
+          {label:'Campaigns', icon:'megaphone', href: '#'},
+          {label:'Voice Campaigns', icon:'phone', href: '#'},
+          {label:'Campaign Flows', icon:'git-branch', href: '#'},
+          {label:'Sequences', icon:'git-branch', href: '#'},
+          {label:'WhatsApp Categories', icon:'message-square', href: '#'},
+          {label:'WhatsApp Auth Templates', icon:'shield-check', href: '#'},
+          {label:'WhatsApp Utility Templates', icon:'settings', href: '#'},
+          {label:'WhatsApp Templates', icon:'file-text', href: '#'},
+          {label:'CRM & Deals', icon:'database', href: '#'},
+          {label:'Integrations', icon:'plug', href: '#'},
+          {label:'Webhooks', icon:'webhook', href: '#'},
+          {label:'Reports & Analytics', icon:'bar-chart-3', href: '#'},
+          {label:'Usage & Quotas', icon:'trending-up', href: '#'},
+          {label:'Access Control', icon:'lock', href: '#'},
+          {label:'API Keys', icon:'key', href: '#'},
+          {label:'Billing', icon:'credit-card', href: '#'},
+          {label:'Brand & Theme', icon:'palette', href: '#'},
+          {label:'Calendar', icon:'calendar', href: '#'},
+          {label:'Changelog & Releases', icon:'clock', href: '#'},
+          {label:'Client Tools', icon:'wrench', href: '#'},
+          {label:'Data Access', icon:'database', href: '#'},
+          {label:'Deliverability', icon:'send', href: '#'},
+          {label:'Domains', icon:'globe', href: '#'},
+          {label:'Environments', icon:'server', href: '#'},
+          {label:'Message Trace', icon:'search', href: '#'},
+          {label:'Notifications', icon:'bell', href: '#'},
+          {label:'Security & Secrets', icon:'shield', href: '#'},
+          {label:'Segments', icon:'users', href: '#'},
+          {label:'Support & Help', icon:'help-circle', href: '#'},
+          {label:'User Roles', icon:'user-check', href: '#'},
+        ]
+      }
+    }
+  </script>
+
+  <!-- Fallback icon initialization -->
+  <script>
+    // Ensure Lucide icons are created after page load
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    });
+
+    // Also try after window load as a fallback
+    window.addEventListener('load', function() {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    });
+  </script>
+
+  {% block extra_js %}{% endblock extra_js %}
+</body>
+</html>
